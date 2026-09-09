@@ -1,0 +1,164 @@
+import utils
+import tkinter as tk
+from gui.exception_window import ExceptionWindow
+from models.database import Database
+from tkinter import ttk
+
+
+class LoginWindow(tk.Tk):
+    def __init__(self):
+        super().__init__()
+
+        self.database = Database()
+
+        self.title("GUIUniApp - Login Window")
+        width, height = 540, 320
+        self.update_idletasks()
+        x = (self.winfo_screenwidth() - width) // 2
+        y = (self.winfo_screenheight() - height) // 2
+        self.geometry(f"{width}x{height}+{x}+{y}")
+        self.resizable(False, False)
+
+        self.email_var = tk.StringVar()
+        self.password_var = tk.StringVar()
+
+        self.create_widgets()
+
+    def create_widgets(self):
+        self.grid_rowconfigure(0, weight=1)
+        self.grid_columnconfigure(0, weight=1)
+
+        main_frame = ttk.Frame(self, padding=20)
+        main_frame.grid(row=0, column=0)
+        main_frame.grid_columnconfigure(0, weight=1)
+        main_frame.grid_columnconfigure(1, weight=1)
+
+        title_label = ttk.Label(
+            main_frame,
+            text="Login",
+            font=("Times New Roman", 18, "bold"),
+        )
+        title_label.grid(row=0, column=0, columnspan=2, pady=(0, 10))
+
+        instruction_label = ttk.Label(
+            main_frame,
+            text=(
+                "Registered students only.\n"
+                "Please enter your email and password to continue.\n"
+                "No admin options are available in GUIUniApp."
+            ),
+            foreground="#16357c",
+            font=("Times New Roman", 12),
+            wraplength=420,
+            justify="center",
+        )
+        instruction_label.grid(row=1, column=0, columnspan=2, pady=(0, 20))
+
+        email_label = ttk.Label(main_frame, text="Email")
+        email_label.grid(row=2, column=0, sticky=tk.E, padx=(0, 10), pady=8)
+
+        self.email_entry = ttk.Entry(
+            main_frame,
+            textvariable=self.email_var,
+            width=30,
+        )
+        self.email_entry.grid(row=2, column=1, pady=8)
+
+        password_label = ttk.Label(main_frame, text="Password")
+        password_label.grid(row=3, column=0, sticky=tk.E, padx=(0, 10), pady=8)
+
+        self.password_entry = ttk.Entry(
+            main_frame,
+            textvariable=self.password_var,
+            width=30,
+            show="*",
+        )
+        self.password_entry.grid(row=3, column=1, pady=8)
+
+        button_frame = ttk.Frame(main_frame)
+        button_frame.grid(row=4, column=0, columnspan=2, pady=(20, 0))
+
+        submit_button = ttk.Button(
+            button_frame,
+            text="Submit",
+            command=self.submit_login,
+        )
+        submit_button.grid(row=0, column=0, padx=5)
+
+        clear_button = ttk.Button(
+            button_frame,
+            text="Clear",
+            command=self.clear_fields,
+        )
+        clear_button.grid(row=0, column=1, padx=5)
+
+        quit_button = ttk.Button(
+            button_frame,
+            text="Quit",
+            command=self.destroy,
+        )
+        quit_button.grid(row=0, column=2, padx=5)
+
+        self.email_entry.focus()
+
+    def submit_login(self):
+        email = self.email_var.get().strip()
+        password = self.password_var.get().strip()
+
+        if not email or not password:
+            ExceptionWindow(
+                self,
+                "Please enter both email and password.",
+                "Login Error",
+            )
+            return
+
+        if not utils.validate_email(email):
+            ExceptionWindow(
+                self,
+                "Incorrect email format.\nUse: firstname.lastname@university.com.",
+                "Login Error",
+            )
+            return
+
+        if not utils.validate_password(password):
+            ExceptionWindow(
+                self,
+                "Incorrect password format.",
+                "Login Error",
+            )
+            return
+
+        all_students = self.database.list_records({"list_all": True}) or {}
+
+        for student_id, student_data in all_students.items():
+            if (
+                student_data.get("email") == email
+                and student_data.get("password") == password
+            ):
+                self.open_enrolment_window(student_id)
+                return
+
+        ExceptionWindow(
+            self,
+            "Incorrect student credentials.",
+            "Login Error",
+        )
+
+    def open_enrolment_window(self, student_id: str):
+        self.clear_fields()
+        self.withdraw()
+
+        from gui.enrolment_window import EnrolmentWindow
+
+        EnrolmentWindow(self, student_id)
+
+    def clear_fields(self):
+        self.email_var.set("")
+        self.password_var.set("")
+        self.email_entry.focus()
+
+
+if __name__ == "__main__":
+    app = LoginWindow()
+    app.mainloop()
