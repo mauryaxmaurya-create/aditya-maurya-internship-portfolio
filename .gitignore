@@ -1,0 +1,23 @@
+# Operating-system and editor files
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# Local data and credentials
+.env
+.env.*
+*.key
+*.pem
+trainData.csv
+bank.csv
+
+# Temporary exports
+*.tmp
+~$*
